@@ -13,13 +13,11 @@ import com.aurora.mapper.ArticleMapper;
 import com.aurora.mapper.ArticleTagMapper;
 import com.aurora.mapper.CategoryMapper;
 import com.aurora.mapper.TagMapper;
-import com.aurora.service.ArticleService;
-import com.aurora.service.ArticleTagService;
-import com.aurora.service.RedisService;
-import com.aurora.service.TagService;
+import com.aurora.service.*;
 import com.aurora.strategy.context.SearchStrategyContext;
 import com.aurora.strategy.context.UploadStrategyContext;
 import com.aurora.util.BeanCopyUtil;
+import com.aurora.util.CronUtil;
 import com.aurora.util.PageUtil;
 import com.aurora.util.UserUtil;
 import com.aurora.model.vo.*;
@@ -65,6 +63,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     @Autowired
     private ArticleTagService articleTagService;
+
+    @Autowired
+    private JobService jobService;
 
     @Autowired
     private RedisService redisService;
@@ -238,18 +239,19 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void saveOrUpdateArticle(ArticleVO articleVO) {
+    public Integer saveOrUpdateArticle(ArticleVO articleVO) {
         Category category = saveArticleCategory(articleVO);
         Article article = BeanCopyUtil.copyObject(articleVO, Article.class);
         if (Objects.nonNull(category)) {
             article.setCategoryId(category.getId());
         }
         article.setUserId(UserUtil.getUserDetailsDTO().getUserInfoId());
-        this.saveOrUpdate(article);
+        boolean save = this.saveOrUpdate(article);
         saveArticleTag(articleVO, article.getId());
         if (article.getStatus().equals(1)) {
             rabbitTemplate.convertAndSend(SUBSCRIBE_EXCHANGE, "*", new Message(JSON.toJSONBytes(article.getId()), new MessageProperties()));
         }
+        return save ? article.getId() : -1;
     }
 
     @Override
@@ -371,6 +373,30 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
                     .collect(Collectors.toList());
             articleTagService.saveBatch(articleTags);
         }
+    }
+
+    @Override
+    public boolean saveArticleAtDelayTime(ArticleVO articleVO) {
+
+        if (Objects.equals(articleVO.getStatus(), DELAY.getStatus()) && articleVO.getTimestamp() != null) {
+            // TODO: the articleId in database is auto-increment, can't be set
+            // therefore, we have to get the articleId from database, not from Object yet
+            Integer articleId = saveOrUpdateArticle(articleVO);
+            if (articleId == -1) return false;
+            JobVO jobVO = JobVO.builder()
+                    .jobName("定时发布文章")
+                    .jobGroup("默认")
+                    .invokeTarget("auroraQuartz.publishDelayTime(" + articleId + ")")
+                    .cronExpression(CronUtil.getCron(articleVO.getTimestamp()))
+                    .misfirePolicy(2)
+                    .status(0)
+                    .concurrent(0)
+                    .build();
+            jobService.saveJob(jobVO);
+            return true;
+        }
+        return false;
+
     }
 
 }

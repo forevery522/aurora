@@ -1,7 +1,6 @@
 package com.aurora.strategy.impl;
 
-import com.aurora.model.dto.SocialTokenDTO;
-import com.aurora.model.dto.SocialUserInfoDTO;
+import com.alibaba.fastjson.JSON;
 import com.aurora.model.dto.UserDetailsDTO;
 import com.aurora.model.dto.UserInfoDTO;
 import com.aurora.entity.UserAuth;
@@ -19,6 +18,7 @@ import com.aurora.util.BeanCopyUtil;
 import com.aurora.util.IpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import me.zhyd.oauth.model.AuthUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,8 +31,8 @@ import java.util.Objects;
 
 import static com.aurora.constant.CommonConstant.TRUE;
 
-@Service
-public abstract class AbstractSocialLoginStrategyImpl implements SocialLoginStrategy {
+@Service("thirdLoginStrategyImpl")
+public class ThirdLoginStrategyImpl implements SocialLoginStrategy {
 
     @Autowired
     private UserAuthMapper userAuthMapper;
@@ -53,20 +53,22 @@ public abstract class AbstractSocialLoginStrategyImpl implements SocialLoginStra
     private HttpServletRequest request;
 
     @Override
-    public UserInfoDTO login(String data) {
+    public UserInfoDTO login(String data, String loginType) {
         UserDetailsDTO userDetailsDTO;
-        SocialTokenDTO socialToken = getSocialToken(data);
+//        SocialTokenDTO socialToken = getSocialToken(data);
+        AuthUser socialToken = JSON.parseObject(data, AuthUser.class);
         String ipAddress = IpUtil.getIpAddress(request);
         String ipSource = IpUtil.getIpSource(ipAddress);
-        UserAuth user = getUserAuth(socialToken);
+        UserAuth user = getUserAuth(socialToken, loginType);
         if (Objects.nonNull(user)) {
             userDetailsDTO = getUserDetail(user, ipAddress, ipSource);
         } else {
-            userDetailsDTO = saveUserDetail(socialToken, ipAddress, ipSource);
+            userDetailsDTO = saveUserDetail(socialToken, ipAddress, ipSource, loginType);
         }
         if (userDetailsDTO.getIsDisable().equals(TRUE)) {
             throw new BizException("用户帐号已被锁定");
         }
+//        userDetailsDTO.setExpireTime(LocalDateTime.now().plusSeconds(socialToken.getToken().getExpireIn()));
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetailsDTO, null, userDetailsDTO.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(auth);
         UserInfoDTO userInfoDTO = BeanCopyUtil.copyObject(userDetailsDTO, UserInfoDTO.class);
@@ -75,14 +77,14 @@ public abstract class AbstractSocialLoginStrategyImpl implements SocialLoginStra
         return userInfoDTO;
     }
 
-    public abstract SocialTokenDTO getSocialToken(String data);
+//    public abstract SocialTokenDTO getSocialToken(String data);
 
-    public abstract SocialUserInfoDTO getSocialUserInfo(SocialTokenDTO socialTokenDTO);
+//    public abstract SocialUserInfoDTO getSocialUserInfo(SocialTokenDTO socialTokenDTO);
 
-    private UserAuth getUserAuth(SocialTokenDTO socialTokenDTO) {
+    private UserAuth getUserAuth(AuthUser authUser, String loginType) {
         return userAuthMapper.selectOne(new LambdaQueryWrapper<UserAuth>()
-                .eq(UserAuth::getUsername, socialTokenDTO.getOpenId())
-                .eq(UserAuth::getLoginType, socialTokenDTO.getLoginType()));
+                .eq(UserAuth::getUsername, authUser.getUsername())
+                .eq(UserAuth::getLoginType, loginType));
     }
 
     private UserDetailsDTO getUserDetail(UserAuth user, String ipAddress, String ipSource) {
@@ -94,18 +96,19 @@ public abstract class AbstractSocialLoginStrategyImpl implements SocialLoginStra
         return userDetailService.convertUserDetail(user, request);
     }
 
-    private UserDetailsDTO saveUserDetail(SocialTokenDTO socialToken, String ipAddress, String ipSource) {
-        SocialUserInfoDTO socialUserInfo = getSocialUserInfo(socialToken);
+    private UserDetailsDTO saveUserDetail(AuthUser socialToken, String ipAddress, String ipSource, String loginType) {
+//        SocialUserInfoDTO socialUserInfo = getSocialUserInfo(socialToken);
         UserInfo userInfo = UserInfo.builder()
-                .nickname(socialUserInfo.getNickname())
-                .avatar(socialUserInfo.getAvatar())
+                .nickname(socialToken.getNickname())
+                .avatar(socialToken.getAvatar())
+                .email(socialToken.getEmail())
                 .build();
         userInfoMapper.insert(userInfo);
         UserAuth userAuth = UserAuth.builder()
                 .userInfoId(userInfo.getId())
-                .username(socialToken.getOpenId())
-                .password(socialToken.getAccessToken())
-                .loginType(socialToken.getLoginType())
+                .username(socialToken.getUsername())
+                .password(socialToken.getToken().getAccessToken())
+                .loginType(loginType)
                 .lastLoginTime(LocalDateTime.now())
                 .ipAddress(ipAddress)
                 .ipSource(ipSource)

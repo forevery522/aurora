@@ -9,7 +9,7 @@ public enum LoginTypeEnum {
 
     EMAIL(1, "邮箱登录", ""),
 
-    QQ(2, "QQ登录", "qqLoginStrategyImpl");
+    THIRD(2, "第三方登录", "thirdLoginStrategyImpl");
 
     private final Integer type;
 

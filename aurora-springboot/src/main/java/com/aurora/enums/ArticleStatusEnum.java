@@ -11,7 +11,9 @@ public enum ArticleStatusEnum {
 
     SECRET(2, "密码"),
 
-    DRAFT(3, "草稿");
+    DRAFT(3, "草稿"),
+
+    DELAY(4, "延迟发布");
 
     private final Integer status;
 

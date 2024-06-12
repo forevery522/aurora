@@ -5,6 +5,6 @@ import com.aurora.model.dto.UserInfoDTO;
 
 public interface SocialLoginStrategy {
 
-    UserInfoDTO login(String data);
+    UserInfoDTO login(String data, String loginType);
 
 }

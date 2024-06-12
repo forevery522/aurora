@@ -26,7 +26,7 @@ public interface ArticleService extends IService<Article> {
 
     PageResultDTO<ArticleAdminDTO> listArticlesAdmin(ConditionVO conditionVO);
 
-    void saveOrUpdateArticle(ArticleVO articleVO);
+    Integer saveOrUpdateArticle(ArticleVO articleVO);
 
     void updateArticleTopAndFeatured(ArticleTopFeaturedVO articleTopFeaturedVO);
 
@@ -40,4 +40,5 @@ public interface ArticleService extends IService<Article> {
 
     List<ArticleSearchDTO> listArticlesBySearch(ConditionVO condition);
 
+    boolean saveArticleAtDelayTime(ArticleVO articleVO);
 }

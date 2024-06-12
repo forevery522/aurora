@@ -15,8 +15,8 @@ public class SocialLoginStrategyContext {
     @Autowired
     private Map<String, SocialLoginStrategy> socialLoginStrategyMap;
 
-    public UserInfoDTO executeLoginStrategy(String data, LoginTypeEnum loginTypeEnum) {
-        return socialLoginStrategyMap.get(loginTypeEnum.getStrategy()).login(data);
+    public UserInfoDTO executeLoginStrategy(String data, LoginTypeEnum loginTypeEnum, String loginType) {
+        return socialLoginStrategyMap.get(loginTypeEnum.getStrategy()).login(data, loginType);
     }
 
 }

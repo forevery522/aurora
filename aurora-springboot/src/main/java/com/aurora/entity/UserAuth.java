@@ -24,7 +24,7 @@ public class UserAuth {
 
     private String password;
 
-    private Integer loginType;
+    private String loginType;
 
     private String ipAddress;
 

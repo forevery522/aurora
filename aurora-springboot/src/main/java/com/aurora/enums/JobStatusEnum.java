@@ -7,9 +7,9 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum JobStatusEnum {
 
-    NORMAL(1),
+    NORMAL(0),
 
-    PAUSE(0);
+    PAUSE(1);
 
     private final Integer value;
 

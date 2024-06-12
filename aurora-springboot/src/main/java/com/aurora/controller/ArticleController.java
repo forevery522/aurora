@@ -150,4 +150,12 @@ public class ArticleController {
         return ResultVO.ok(articleService.listArticlesBySearch(condition));
     }
 
+    @ApiOperation(value = "定时发布文章")
+    @PostMapping("/articles/saveAtDelayTime")
+    public ResultVO<?> saveArticleByDelayTime(@RequestBody ArticleVO articleVO) {
+
+        return articleService.saveArticleAtDelayTime(articleVO) ? ResultVO.ok() : ResultVO.fail("未成功发布");
+
+    }
+
 }

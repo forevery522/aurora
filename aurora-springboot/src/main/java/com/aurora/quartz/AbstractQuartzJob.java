@@ -3,7 +3,9 @@ package com.aurora.quartz;
 import com.aurora.constant.ScheduleConstant;
 import com.aurora.entity.Job;
 import com.aurora.entity.JobLog;
+import com.aurora.enums.JobStatusEnum;
 import com.aurora.mapper.JobLogMapper;
+import com.aurora.mapper.JobMapper;
 import com.aurora.util.ExceptionUtil;
 import com.aurora.util.SpringUtil;
 import org.quartz.JobExecutionContext;
@@ -60,6 +62,12 @@ public abstract class AbstractQuartzJob implements org.quartz.Job {
             jobLog.setStatus(ONE);
         }
         SpringUtil.getBean(JobLogMapper.class).insert(jobLog);
+
+        // delete the one-time job after execution
+        if (job.getMisfirePolicy() == 2) {
+            SpringUtil.getBean(JobMapper.class).deleteById(job.getId());
+        }
+
     }
 
     protected abstract void doExecute(JobExecutionContext context, Job job) throws Exception;

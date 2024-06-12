@@ -1,4 +1,4 @@
-FROM openjdk:8
+FROM openjdk:11
 RUN rm -f /etc/localtime \
 && ln -sv /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
 && echo "Asia/Shanghai" > /etc/timezone

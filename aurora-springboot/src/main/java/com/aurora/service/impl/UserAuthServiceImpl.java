@@ -24,6 +24,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import lombok.SneakyThrows;
+import me.zhyd.oauth.model.AuthUser;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -139,7 +140,7 @@ public class UserAuthServiceImpl implements UserAuthService {
                 .userInfoId(userInfo.getId())
                 .username(userVO.getUsername())
                 .password(BCrypt.hashpw(userVO.getPassword(), BCrypt.gensalt()))
-                .loginType(LoginTypeEnum.EMAIL.getType())
+                .loginType(LoginTypeEnum.EMAIL.toString())
                 .build();
         userAuthMapper.insert(userAuth);
     }
@@ -189,8 +190,8 @@ public class UserAuthServiceImpl implements UserAuthService {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public UserInfoDTO qqLogin(QQLoginVO qqLoginVO) {
-        return socialLoginStrategyContext.executeLoginStrategy(JSON.toJSONString(qqLoginVO), LoginTypeEnum.QQ);
+    public UserInfoDTO thirdLogin(AuthUser authUser, String loginType) {
+        return socialLoginStrategyContext.executeLoginStrategy(JSON.toJSONString(authUser), LoginTypeEnum.THIRD, loginType);
     }
 
     private Boolean checkUser(UserVO user) {

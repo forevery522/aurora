@@ -55,4 +55,8 @@ public class ArticleVO {
 
     @ApiModelProperty(name = "password", value = "文章访问密码", dataType = "String")
     private String password;
+
+    @ApiModelProperty(name = "timestamp", value = "定时发布时间", dataType = "String")
+    private String timestamp;
+
 }

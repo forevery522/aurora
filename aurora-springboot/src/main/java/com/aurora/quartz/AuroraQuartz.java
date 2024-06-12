@@ -2,6 +2,8 @@ package com.aurora.quartz;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
 import com.alibaba.fastjson.JSON;
+import com.aurora.enums.ArticleStatusEnum;
+import com.aurora.model.dto.ArticleDTO;
 import com.aurora.model.dto.ArticleSearchDTO;
 import com.aurora.model.dto.UserAreaDTO;
 import com.aurora.entity.*;
@@ -135,4 +137,19 @@ public class AuroraQuartz {
             elasticsearchMapper.save(BeanCopyUtil.copyObject(article, ArticleSearchDTO.class));
         }
     }
+
+    public void publishDelayTime(Integer articleId) {
+        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Article::getId, articleId).eq(Article::getStatus, ArticleStatusEnum.DELAY.getStatus());
+        Article article = articleService.getOne(wrapper);
+        if (article != null) {
+            if (article.getPassword() != null) {
+                article.setStatus(ArticleStatusEnum.SECRET.getStatus());
+            } else {
+                article.setStatus(ArticleStatusEnum.PUBLIC.getStatus());
+            }
+            articleService.updateById(article);
+        }
+    }
+
 }

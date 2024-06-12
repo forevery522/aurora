@@ -31,7 +31,7 @@ public class UserDetailsDTO implements UserDetails {
 
     private String email;
 
-    private Integer loginType;
+    private String loginType;
 
     private String username;
 

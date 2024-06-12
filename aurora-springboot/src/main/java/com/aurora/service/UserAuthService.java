@@ -2,6 +2,7 @@ package com.aurora.service;
 
 import com.aurora.model.dto.*;
 import com.aurora.model.vo.*;
+import me.zhyd.oauth.model.AuthUser;
 
 import java.util.List;
 
@@ -21,6 +22,6 @@ public interface UserAuthService {
 
     UserLogoutStatusDTO logout();
 
-    UserInfoDTO qqLogin(QQLoginVO qqLoginVO);
+    UserInfoDTO thirdLogin(AuthUser authUser, String loginType);
 
 }

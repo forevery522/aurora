@@ -6,13 +6,23 @@ import com.aurora.annotation.OptLog;
 import com.aurora.model.dto.*;
 import com.aurora.service.UserAuthService;
 import com.aurora.model.vo.*;
+import com.xkcoding.justauth.AuthRequestFactory;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiOperation;
+import me.zhyd.oauth.config.AuthDefaultSource;
+import me.zhyd.oauth.config.AuthSource;
+import me.zhyd.oauth.model.AuthCallback;
+import me.zhyd.oauth.model.AuthResponse;
+import me.zhyd.oauth.model.AuthUser;
+import me.zhyd.oauth.request.AuthRequest;
+import me.zhyd.oauth.utils.AuthStateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.io.IOException;
 import java.util.List;
 
 import static com.aurora.constant.OptTypeConstant.UPDATE;
@@ -22,9 +32,12 @@ import static com.aurora.constant.OptTypeConstant.UPDATE;
 public class UserAuthController {
 
     @Autowired
+    private AuthRequestFactory factory;
+
+    @Autowired
     private UserAuthService userAuthService;
 
-    @AccessLimit(seconds = 60,maxCount = 1)
+    @AccessLimit(seconds = 60, maxCount = 1)
     @ApiOperation(value = "发送邮箱验证码")
     @ApiImplicitParam(name = "username", value = "用户名", required = true, dataType = "String")
     @GetMapping("/users/code")
@@ -74,10 +87,23 @@ public class UserAuthController {
         return ResultVO.ok(userAuthService.logout());
     }
 
-    @ApiOperation(value = "qq登录")
-    @PostMapping("/users/oauth/qq")
-    public ResultVO<UserInfoDTO> qqLogin(@Valid @RequestBody QQLoginVO qqLoginVO) {
-        return ResultVO.ok(userAuthService.qqLogin(qqLoginVO));
+    @ApiOperation("跳转第三方授权页面")
+    @RequestMapping("/users/oauth/login/{type}")
+    public void render(@PathVariable String type, HttpServletResponse response) throws IOException {
+        AuthRequest authRequest = factory.get(type);
+        String redirect = authRequest.authorize(type + "::" + AuthStateUtils.createState());
+        response.sendRedirect(redirect);
+    }
+
+    @ApiOperation("第三方登录回调")
+    @RequestMapping("/users/oauth/callback/{type}")
+    public ResultVO<UserInfoDTO> thirdLogin(@PathVariable String type, AuthCallback callback) {
+        AuthRequest authRequest = factory.get(type);
+        AuthResponse authResponse = authRequest.login(callback);
+        // TODO：得到授权用户信息，获得jwtToken
+        AuthUser user = (AuthUser) authResponse.getData();
+        UserInfoDTO userInfoDTO = userAuthService.thirdLogin(user, type);
+        return ResultVO.ok(userInfoDTO);
     }
 
 }
