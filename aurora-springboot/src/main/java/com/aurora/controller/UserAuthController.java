@@ -100,7 +100,6 @@ public class UserAuthController {
     public ResultVO<UserInfoDTO> thirdLogin(@PathVariable String type, AuthCallback callback) {
         AuthRequest authRequest = factory.get(type);
         AuthResponse authResponse = authRequest.login(callback);
-        // TODO：得到授权用户信息，获得jwtToken
         AuthUser user = (AuthUser) authResponse.getData();
         UserInfoDTO userInfoDTO = userAuthService.thirdLogin(user, type);
         return ResultVO.ok(userInfoDTO);
