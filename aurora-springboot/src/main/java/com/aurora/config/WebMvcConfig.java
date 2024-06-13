@@ -18,13 +18,15 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Autowired
     private AccessLimitInterceptor accessLimitInterceptor;
 
+    private static final String[] METHOD = new String[]{"GET", "POST", "PUT", "DELETE"};
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowCredentials(true)
                 .allowedHeaders("*")
-                .allowedOrigins("*")
-                .allowedMethods("*");
+                .allowedOriginPatterns("*")
+                .allowedMethods(METHOD);
     }
 
     @Override
